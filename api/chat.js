@@ -1,43 +1,43 @@
-// api/chat.js
-import OpenAI from "openai";
 
-// ✅ 페이지 도메인만 명시적으로 허용 (보안용)
-const ALLOW_ORIGIN = "https://kimddingjae.github.io"; 
-const ALLOW_METHODS = "POST, OPTIONS";
-const ALLOW_HEADERS = "Content-Type";
 
 export default async function handler(req, res) {
-  // 공통 CORS 헤더
-  res.setHeader("Access-Control-Allow-Origin", ALLOW_ORIGIN);
-  res.setHeader("Access-Control-Allow-Methods", ALLOW_METHODS);
-  res.setHeader("Access-Control-Allow-Headers", ALLOW_HEADERS);
+  // 1. CORS 설정: 내 깃허브 페이지 주소만 허용 (보안 강화)
+  // '*' 대신 실제 본인의 깃허브 주소를 적으세요. 예: https://your-id.github.io
+  const allowedOrigin = "https://kimddingjae.github.io"; 
+  
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // ✅ 프리플라이트(OPTIONS) 처리
-  if (req.method === "OPTIONS") {
+  // 2. 브라우저의 Preflight(사전 검사) 요청 처리
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
+  // 3. POST 요청이 아닌 경우 차단
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  try {
-    const { messages } = req.body || {};
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: "messages is required" });
-    }
+  const { message } = req.body;
+  const API_KEY = process.env.GEMINI_API_KEY;
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages,
-      temperature: 0.7,
+  try {
+    // 4. Gemini API 호출
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: message }] }]
+      })
     });
 
-    const content = completion.choices?.[0]?.message?.content || "";
-    return res.status(200).json({ content });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).send(e?.message || "Server Error");
+    const data = await response.json();
+    
+    // 5. 결과 반환
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Gemini 호출 중 오류가 발생했습니다.' });
   }
 }
