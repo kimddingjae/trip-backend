@@ -3,7 +3,7 @@
 export default async function handler(req, res) {
   // 1. CORS 설정: 내 깃허브 페이지 주소만 허용 (보안 강화)
   // '*' 대신 실제 본인의 깃허브 주소를 적으세요. 예: https://your-id.github.io
-  const allowedOrigin = "https://kimddingjae.github.io"; 
+  const allowedOrigin = "*"; 
   
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
