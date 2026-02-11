@@ -33,11 +33,13 @@ export default async function handler(req, res) {
 
   const data = await response.json();
   
-  // 💡 수정: 데이터 구조에서 텍스트만 추출해서 보냅니다.
-  const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "추천 정보를 가져오지 못했습니다.";
-  
-  res.status(200).json({ reply: aiResponse }); // JSON 형태로 응답
+  // 서버 로그에 구글로부터 받은 원본 데이터를 출력하여 확인합니다.
+  console.log("Gemini Response:", JSON.stringify(data)); 
+
+  const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "내용 없음";
+  res.status(200).json({ reply: aiResponse });
 } catch (error) {
-  res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  console.error("Server Error:", error);
+  res.status(500).json({ error: error.message });
 }
 }
