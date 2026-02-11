@@ -23,21 +23,21 @@ export default async function handler(req, res) {
   const API_KEY = process.env.GEMINI_API_KEY;
 
   try {
-    // 4. Gemini API 호출
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: message }] }]
-      })
-    });
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: message }] }]
+    })
+  });
 
-    const data = await response.json();
-    
-    // 5. 결과 반환
-    res.status(200).json(data);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Gemini 호출 중 오류가 발생했습니다.' });
-  }
+  const data = await response.json();
+  
+  // 💡 수정: 데이터 구조에서 텍스트만 추출해서 보냅니다.
+  const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "추천 정보를 가져오지 못했습니다.";
+  
+  res.status(200).json({ reply: aiResponse }); // JSON 형태로 응답
+} catch (error) {
+  res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+}
 }
