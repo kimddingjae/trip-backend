@@ -22,8 +22,10 @@ export default async function handler(req, res) {
   const { message } = req.body;
   const API_KEY = process.env.GEMINI_API_KEY;
 
-  try {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+  // api/chat.js 수정본
+try {
+  // 💡 모델 명칭과 버전을 안정적인 경로로 수정했습니다.
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -33,13 +35,15 @@ export default async function handler(req, res) {
 
   const data = await response.json();
   
-  // 서버 로그에 구글로부터 받은 원본 데이터를 출력하여 확인합니다.
-  console.log("Gemini Response:", JSON.stringify(data)); 
+  // 💡 로그에서 본 404 에러 등이 있을 경우를 대비한 안전장치
+  if (data.error) {
+    console.error("Gemini API Error:", data.error.message);
+    return res.status(data.error.code || 500).json({ reply: "AI 서비스 오류: " + data.error.message });
+  }
 
-  const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "내용 없음";
+  const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "내용을 생성할 수 없습니다.";
   res.status(200).json({ reply: aiResponse });
 } catch (error) {
-  console.error("Server Error:", error);
-  res.status(500).json({ error: error.message });
+  res.status(500).json({ error: "서버 연결 실패" });
 }
 }
