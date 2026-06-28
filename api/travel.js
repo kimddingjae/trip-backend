@@ -79,12 +79,22 @@ export default async function handler(req, res) {
     const transit =
       transitResult.status === "fulfilled"
         ? transitResult.value
-        : { bus: null, train: null };
+        : { bus: null, train: null, error: "failed" };
 
     const hints = [];
     if (car) hints.push(car);
     if (transit.train) hints.push(transit.train);
-    else if (transit.bus) hints.push(transit.bus);
+    if (transit.bus) hints.push(transit.bus);
+
+    let transitNote = null;
+    if (!transit.train && !transit.bus) {
+      if (transit.error === "forbidden") {
+        transitNote =
+          "버스·기차는 PRODUCTS → API TMAP 대중교통 상품 신청 후 표시됩니다.";
+      } else if (car) {
+        transitNote = "이 구간의 대중교통 경로를 찾지 못했습니다.";
+      }
+    }
 
     if (!hints.length) {
       const err =
@@ -96,7 +106,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: err || "교통 정보를 가져오지 못했습니다." });
     }
 
-    return res.status(200).json({ originLabel, hints, source: "tmap" });
+    return res.status(200).json({ originLabel, hints, source: "tmap", transitNote });
   } catch (err) {
     console.error("travel api error:", err);
     return res.status(500).json({
@@ -240,8 +250,13 @@ async function fetchTmapTransit(origin, dest, appKey) {
   );
 
   if (!res.ok) {
-    console.warn("TMAP transit error:", res.status, await res.text());
-    return { bus: null, train: null };
+    const text = await res.text();
+    console.warn("TMAP transit error:", res.status, text);
+    return {
+      bus: null,
+      train: null,
+      error: res.status === 401 || res.status === 403 ? "forbidden" : "failed",
+    };
   }
 
   const data = await res.json();
@@ -250,6 +265,7 @@ async function fetchTmapTransit(origin, dest, appKey) {
   return {
     train: pickBestTrainItinerary(itineraries),
     bus: pickBestBusItinerary(itineraries),
+    error: itineraries.length ? null : "empty",
   };
 }
 
