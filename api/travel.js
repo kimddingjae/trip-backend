@@ -119,13 +119,16 @@ async function fetchTmapOriginLabel(origin, appKey) {
     throw new Error(tmapErrorMessage(res.status, text));
   }
   const data = await res.json();
-  const info = data.addressInfo;
+  return formatOriginLabel(data.addressInfo);
+}
+
+function formatOriginLabel(info) {
   if (!info) return "현재 위치";
 
-  if (info.fullAddress) return info.fullAddress;
-  return [info.city_do, info.gu_gun, info.legalDong || info.adminDong]
-    .filter(Boolean)
-    .join(" ");
+  const parts = [info.city_do, info.gu_gun].filter(Boolean);
+  if (parts.length) return parts.join(" ");
+
+  return "현재 위치";
 }
 
 async function fetchTmapCar(origin, dest, appKey) {
